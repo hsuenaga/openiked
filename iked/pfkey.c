@@ -70,6 +70,11 @@ struct pfkey_constmap {
 	u_int		 pfkey_fixedkey;
 };
 
+struct pfkey_strmap {
+	u_int8_t	pfkey_id;
+	const char	*pfkey_string;
+};
+
 static const struct pfkey_constmap pfkey_encr[] = {
 #ifdef SADB_X_EALG_DES_IV64
 	{ SADB_X_EALG_DES_IV64,	IKEV2_XFORMENCR_DES_IV64 },
@@ -135,6 +140,44 @@ static const struct pfkey_constmap pfkey_satype[] = {
 	{ 0 }
 };
 
+#define DEF_PFKEY_STRING(name) { name, #name }
+#if defined(__NetBSD__)
+static const struct pfkey_strmap pfkey_type_string[] = {
+	{ SADB_RESERVED, 0 },
+	DEF_PFKEY_STRING(SADB_GETSPI),		/* 1 */
+	DEF_PFKEY_STRING(SADB_UPDATE),		/* 2 */
+	DEF_PFKEY_STRING(SADB_ADD),		/* 3 */
+	DEF_PFKEY_STRING(SADB_DELETE),		/* 4 */
+	DEF_PFKEY_STRING(SADB_GET),		/* 5 */
+	DEF_PFKEY_STRING(SADB_ACQUIRE),		/* 6 */
+	DEF_PFKEY_STRING(SADB_REGISTER),	/* 7 */
+	DEF_PFKEY_STRING(SADB_EXPIRE),		/* 8 */
+	DEF_PFKEY_STRING(SADB_FLUSH),		/* 9 */
+	DEF_PFKEY_STRING(SADB_DUMP),		/* 10 */
+	DEF_PFKEY_STRING(SADB_X_PROMISC),	/* 11 */
+	DEF_PFKEY_STRING(SADB_X_PCHANGE),	/* 12 */
+	DEF_PFKEY_STRING(SADB_X_SPDUPDATE),	/* 13 */
+	DEF_PFKEY_STRING(SADB_X_SPDADD),	/* 14 */
+	DEF_PFKEY_STRING(SADB_X_SPDDELETE),	/* 15 */
+	DEF_PFKEY_STRING(SADB_X_SPDGET),	/* 16 */
+	DEF_PFKEY_STRING(SADB_X_SPDACQUIRE),	/* 17 */
+	DEF_PFKEY_STRING(SADB_X_SPDDUMP),	/* 18 */
+	DEF_PFKEY_STRING(SADB_X_SPDFLUSH),	/* 19 */
+	DEF_PFKEY_STRING(SADB_X_SPDSETIDX),	/* 20 */
+	DEF_PFKEY_STRING(SADB_X_SPDEXPIRE),	/* 21 */
+	DEF_PFKEY_STRING(SADB_X_SPDDELETE2),	/* 22 */
+	DEF_PFKEY_STRING(SADB_X_NAT_T_NEW_MAPPING), /* 23 */
+	{ SADB_MAX, NULL }
+};
+#else
+/* other system */
+static const struct pfkey_strmap pfkey_type_string[] = {
+	{ 0, 0 },
+	{ 0, NULL }
+};
+#endif
+#undef DEF_PFKEY_STRING
+
 int	pfkey_map(const struct pfkey_constmap *, u_int16_t, u_int8_t *);
 int	pfkey_flow(int, u_int8_t, u_int8_t, struct iked_flow *);
 int	pfkey_sa(int, u_int8_t, u_int8_t, struct iked_childsa *);
@@ -154,6 +197,8 @@ void	*pfkey_find_ext(u_int8_t *, ssize_t, int);
 
 void	pfkey_timer_cb(int, short, void *);
 void	pfkey_process(struct iked *, struct pfkey_message *);
+
+const char *pfkey_strtype(uint8_t);
 
 int
 pfkey_couple(int sd, struct iked_sas *sas, int couple)
@@ -1098,7 +1143,8 @@ pfkey_sa_getspi(int sd, u_int8_t satype, struct iked_childsa *sa,
 	msg = (struct sadb_msg *)data;
 	if (msg->sadb_msg_errno != 0) {
 		errno = msg->sadb_msg_errno;
-		log_warn("%s: message", __func__);
+		log_warn("%s: %s message",
+		    pfkey_strtype(msg->sadb_msg_type), __func__);
 		goto done;
 	}
 	if ((sa_ext = pfkey_find_ext(data, n, SADB_EXT_SA)) == NULL) {
@@ -1925,4 +1971,12 @@ out:
 			ikev2_drop_sa(env, &spi);
 		break;
 	}
+}
+
+const char *
+pfkey_strtype(uint8_t type)
+{
+	if (type == 0 || type >= SADB_MAX)
+		return "OUT_OF_RANGE";
+	return pfkey_type_string[type].pfkey_string;
 }
