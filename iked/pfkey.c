@@ -1144,7 +1144,7 @@ pfkey_sa_getspi(int sd, u_int8_t satype, struct iked_childsa *sa,
 	if (msg->sadb_msg_errno != 0) {
 		errno = msg->sadb_msg_errno;
 		log_warn("%s: %s message",
-		    pfkey_strtype(msg->sadb_msg_type), __func__);
+		    __func__, pfkey_strtype(msg->sadb_msg_type));
 		goto done;
 	}
 	if ((sa_ext = pfkey_find_ext(data, n, SADB_EXT_SA)) == NULL) {
@@ -1366,7 +1366,7 @@ pfkey_reply(int sd, u_int8_t **datap, ssize_t *lenp)
 		errno = hdr.sadb_msg_errno;
 		if (errno != EEXIST) {
 			log_warn("%s: %s message",
-			    pfkey_strtype(hdr.sadb_msg_type), __func__);
+			    __func__, pfkey_strtype(hdr.sadb_msg_type));
 			return (-1);
 		}
 	}
