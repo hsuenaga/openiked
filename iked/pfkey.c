@@ -1365,7 +1365,8 @@ pfkey_reply(int sd, u_int8_t **datap, ssize_t *lenp)
 	if (datap == NULL && hdr.sadb_msg_errno != 0) {
 		errno = hdr.sadb_msg_errno;
 		if (errno != EEXIST) {
-			log_warn("%s: message", __func__);
+			log_warn("%s: %s message",
+			    pfkey_strtype(msg->sadb_msg_type), __func__);
 			return (-1);
 		}
 	}
